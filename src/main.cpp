@@ -7,18 +7,12 @@ float readBatteryLevel();
 void alarmInterruption();
 void reboot();
 
-char alarmCode = '0';
+const char DOOR_OPEN = '1';
+const char DOOR_CLOSED = '0';
+char alarmCode = DOOR_CLOSED;
 
 void setup()
 {
-
-  // We are using Serial1 instead than Serial because we are going in standby
-  // and the USB port could get confused during wakeup. To read the debug prints,
-  // connect pins 13-14 (TX-RX) to a 3.3V USB-to-serial converter
-  Serial1.begin(115200);
-  while (!Serial1)
-  {
-  }
 
   if (!SigFox.begin())
   {
@@ -66,9 +60,9 @@ void alarmInterruption()
   int state = digitalRead(0);
 
   if (state == HIGH)
-    alarmCode = '1';
+    alarmCode = DOOR_OPEN;
   else
-    alarmCode = '0';
+    alarmCode = DOOR_CLOSED;
 }
 
 void reboot()
