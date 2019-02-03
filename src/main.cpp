@@ -1,7 +1,7 @@
 #include <SigFox.h>
 #include <ArduinoLowPower.h>
 
-#define WAKE_UP_INTERVAL 259200000 //3 days
+#define WAKE_UP_INTERVAL 86400000 //1 day
 
 float readBatteryLevel();
 void alarmInterruption();
@@ -9,7 +9,8 @@ void reboot();
 
 const char DOOR_OPEN = '1';
 const char DOOR_CLOSED = '0';
-char alarmCode = DOOR_CLOSED;
+const char KEEP_ALIVE = '2';
+char alarmCode = KEEP_ALIVE;
 
 void setup()
 {
@@ -23,19 +24,17 @@ void setup()
   //Send module to standby until we need to send a message
   SigFox.end();
 
-  // Enable debug prints and LED indication if we are testing
   SigFox.debug();
 
   // attach pin 0 and 1 to a switch and enable the interrupt on voltage falling event
   pinMode(0, INPUT_PULLDOWN);
   LowPower.attachInterruptWakeup(0, alarmInterruption, CHANGE);
-  //LowPower.attachInterruptWakeup(0, alarmInterruptionClose, FALLING);
 }
 
 void loop()
 {
   // Sleep until an event is recognized
-  LowPower.deepSleep();
+  LowPower.deepSleep(WAKE_UP_INTERVAL); //2 hours
 
   // if we get here it means that an event was received
   SigFox.begin();
@@ -47,12 +46,12 @@ void loop()
 
   SigFox.beginPacket();
   SigFox.print(to_be_sent);
-  int ret = SigFox.endPacket();
-
-  //alarmCode = 0;
+  SigFox.endPacket();
 
   // shut down module, back to standby
   SigFox.end();
+
+  alarmCode = KEEP_ALIVE;
 }
 
 void alarmInterruption()
