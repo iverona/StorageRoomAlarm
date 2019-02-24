@@ -1,16 +1,22 @@
 #include <SigFox.h>
 #include <ArduinoLowPower.h>
 
-#define WAKE_UP_INTERVAL 86400000 //1 day
+#define WAKE_UP_INTERVAL 86400000     // 24 hours
+#define SUB_WAKE_UP_INTERVAL 14400000 //4 hours
+#define WAKE_CYCLES (WAKE_UP_INTERVAL / SUB_WAKE_UP_INTERVAL)
 
 float readBatteryLevel();
 void alarmInterruption();
 void reboot();
+void sendMessage();
 
+const char KEEP_ALIVE = '2';
 const char DOOR_OPEN = '1';
 const char DOOR_CLOSED = '0';
-const char KEEP_ALIVE = '2';
+
 char alarmCode = KEEP_ALIVE;
+
+int wake_reps = 1;
 
 void setup()
 {
@@ -34,9 +40,29 @@ void setup()
 void loop()
 {
   // Sleep until an event is recognized
-  LowPower.deepSleep(WAKE_UP_INTERVAL); //2 hours
+  LowPower.deepSleep(SUB_WAKE_UP_INTERVAL);
 
-  // if we get here it means that an event was received
+  switch (alarmCode)
+  {
+
+  case KEEP_ALIVE:
+    if (wake_reps < WAKE_CYCLES)
+    {
+      wake_reps++;
+      break;
+    }
+
+  default:
+    wake_reps = 1;
+
+    sendMessage();
+
+    alarmCode = KEEP_ALIVE;
+  }
+}
+
+void sendMessage()
+{
   SigFox.begin();
 
   delay(100);
@@ -50,8 +76,6 @@ void loop()
 
   // shut down module, back to standby
   SigFox.end();
-
-  alarmCode = KEEP_ALIVE;
 }
 
 void alarmInterruption()
